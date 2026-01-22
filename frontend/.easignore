@@ -1,0 +1,8 @@
+﻿.expo/
+node_modules/
+dist/
+web-build/
+*.jks
+*.keystore
+.DS_Store
+.git/

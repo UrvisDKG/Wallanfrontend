@@ -2,6 +2,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 
 // Backend API Configuration
+// const API_BASE_URL = 'http://192.168.1.6:8000'; // Local Backend (using local IP for Expo)
 const API_BASE_URL = 'https://wallanbackend.onrender.com'; // Live Render Backend
 
 export async function demoLogin() {
@@ -19,6 +20,7 @@ export async function demoLogin() {
 
 export async function requestOTP(phone: string) {
   try {
+    console.log(`[DEBUG] Requesting OTP from: ${API_BASE_URL}/auth/request-otp with phone: ${phone}`);
     const formData = new FormData();
     formData.append('phone', phone);
 
@@ -27,7 +29,10 @@ export async function requestOTP(phone: string) {
       body: formData,
     });
 
-    if (!response.ok) throw new Error('Request OTP failed');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `Request OTP failed: ${response.status}`);
+    }
     return await response.json();
   } catch (error) {
     console.error('Request OTP error:', error);
@@ -46,7 +51,10 @@ export async function verifyOTP(phone: string, otp: number) {
       body: formData,
     });
 
-    if (!response.ok) throw new Error('Verify OTP failed');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `Verify OTP failed: ${response.status}`);
+    }
     return await response.json();
   } catch (error) {
     console.error('Verify OTP error:', error);
@@ -106,7 +114,6 @@ export async function uploadImage(
       throw new Error(`Upload image failed: ${response.status} - ${errorText}`);
     }
     const result = await response.json();
-    console.log("UPLOAD SUCCESS:", result);
     return result;
   } catch (error) {
     console.error('Upload image error:', error);

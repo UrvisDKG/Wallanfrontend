@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "Ride Sure",
+    "slug": "taxi-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.uvisuvi.ridesure",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "usesCleartextTraffic": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Ride Sure to access your photos.",
+          "cameraPermission": "Allow Ride Sure to access your camera."
+        }
+      ]
+    ],
+    "scheme": "taxi-app",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "238499ad-949e-4e3d-baed-8a727997ef46"
+      }
+    },
+    "owner": "uvisuvi"
+  }
+}
