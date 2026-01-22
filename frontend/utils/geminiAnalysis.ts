@@ -128,8 +128,8 @@ If image is completely blank or corrupted, set hasDamage to false.`,
       ],
     };
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
-    console.log('Calling Gemini API (gemini-2.0-flash-exp)...');
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+    console.log('Calling Gemini API (gemini-2.0-flash)...');
 
     const response = await fetch(apiUrl, {
       method: 'POST',
