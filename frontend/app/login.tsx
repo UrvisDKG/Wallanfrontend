@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image, StatusBar, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/auth-context';
-import { requestOTP, verifyOTP } from '@/utils/api';
 import { MaterialIcons } from '@expo/vector-icons';
 
 // Material Design 3 Colors for Login
@@ -28,8 +27,8 @@ export default function LoginScreen() {
 
   const handleGetOTP = async () => {
     // Normalize phone for comparison
-    const normalizedPhone = phone.replace(/\s+/g, '');
-    const targetPhone = '+971558423197';
+    const normalizedPhone = phone.replace(/\s+/g, '').replace('+', '');
+    const targetPhone = '971558423197';
 
     if (normalizedPhone === targetPhone) {
       setStep('otp');
@@ -37,52 +36,25 @@ export default function LoginScreen() {
       return;
     }
 
-    if (phone.length < 10) {
-      Alert.alert('Invalid Number', 'Please enter a valid phone number');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const response = await requestOTP(normalizedPhone);
-      setStep('otp');
-      Alert.alert('Verification Code', `Your OTP is: ${response.otp}`);
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to send OTP. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+    Alert.alert('Access Denied', 'This phone number is not authorized for inspections.');
   };
 
   const handleLogin = async () => {
-    const normalizedPhone = phone.replace(/\s+/g, '');
-    const targetPhone = '+971558423197';
+    const normalizedPhone = phone.replace(/\s+/g, '').replace('+', '');
+    const targetPhone = '971558423197';
 
     if (normalizedPhone === targetPhone && otp === '9755') {
-      login('1', name || 'Authorized User');
-      router.replace('/dashboard');
-      return;
-    }
-
-    if (otp.length < 4) {
-      Alert.alert('Invalid OTP', 'Please enter the code sent to your phone');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const response = await verifyOTP(normalizedPhone, parseInt(otp));
-      if (response && response.user_id) {
-        login(response.user_id.toString(), name || 'Authorized User');
+      setIsLoading(true);
+      // Simulate a small delay for better UX
+      setTimeout(() => {
+        login('1', name || 'Authorized User');
+        setIsLoading(false);
         router.replace('/dashboard');
-      } else {
-        Alert.alert('Login Failed', 'Invalid OTP or server error');
-      }
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Login failed. Please check your connection and try again.');
-    } finally {
-      setIsLoading(false);
+      }, 500);
+      return;
     }
+
+    Alert.alert('Error', 'Invalid OTP. Please enter the correct 4-digit code.');
   };
 
   return (
