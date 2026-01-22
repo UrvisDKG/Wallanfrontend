@@ -20,3 +20,6 @@ ios/
 # NPM
 package-lock.json
 yarn.lock
+
+# Environment / Keys
+utils/config.ts
