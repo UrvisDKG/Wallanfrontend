@@ -5,11 +5,14 @@ export interface DentAnalysisResult {
   success: boolean;
   error?: string;
   hasDents: boolean;
+  damageType?: string;
   severity: 'none' | 'minor' | 'moderate' | 'severe';
   dentLocations: string[];
   description: string;
   recommendations: string[];
   confidence: number; // 0-100
+  imageComplete: boolean;
+  completenessNote?: string;
   rawAnalysis?: any;
 }
 
@@ -36,22 +39,25 @@ export async function detectCarDents(imageUri: string): Promise<DentAnalysisResu
 
     // Extract dent-specific information
     const dentInfo = result.description.toLowerCase();
-    const hasDents = dentInfo.includes('dent') || 
-                     dentInfo.includes('indent') || 
-                     dentInfo.includes('crease') ||
-                     dentInfo.includes('dimple') ||
-                     (result.hasDamage && result.damageType.toLowerCase().includes('dent'));
+    const hasDents = dentInfo.includes('dent') ||
+      dentInfo.includes('indent') ||
+      dentInfo.includes('crease') ||
+      dentInfo.includes('dimple') ||
+      (result.hasDamage && result.damageType.toLowerCase().includes('dent'));
 
     const dentLocations = extractDentLocations(result.description);
 
     return {
       success: true,
       hasDents: hasDents || (result.hasDamage && result.severity !== 'none'),
+      damageType: result.damageType,
       severity: result.severity,
       dentLocations: dentLocations.length > 0 ? dentLocations : extractFromDescription(result.description),
       description: result.description,
       recommendations: result.recommendations,
       confidence: calculateConfidence(result),
+      imageComplete: result.imageComplete,
+      completenessNote: result.completenessNote,
       rawAnalysis: result,
     };
   } catch (error) {
@@ -65,6 +71,7 @@ export async function detectCarDents(imageUri: string): Promise<DentAnalysisResu
       description: '',
       recommendations: [],
       confidence: 0,
+      imageComplete: false,
     };
   }
 }
@@ -82,14 +89,14 @@ export async function detectCarDents(imageUri: string): Promise<DentAnalysisResu
  */
 export async function analyzeCarFromMultipleAngles(imageUris: string[]) {
   console.log(`📸 Analyzing car from ${imageUris.length} different angles...`);
-  
+
   const allResults: DentAnalysisResult[] = [];
   const angleLabels = ['Front', 'Rear', 'Left Side', 'Right Side'];
 
   for (let i = 0; i < imageUris.length; i++) {
     try {
       console.log(`\n🔍 Analyzing angle ${i + 1}/${imageUris.length}: ${angleLabels[i] || `Angle ${i + 1}`}`);
-      
+
       const result = await detectCarDents(imageUris[i]);
       allResults.push(result);
 
@@ -111,7 +118,7 @@ export async function analyzeCarFromMultipleAngles(imageUris: string[]) {
 function generateComprehensiveReport(results: DentAnalysisResult[], totalAnglesAttempted: number) {
   const successfulAnalyses = results.filter((r) => r.success);
   const angliesWithDents = results.filter((r) => r.success && r.hasDents);
-  
+
   // Aggregate all unique dent locations
   const allLocations = new Set<string>();
   results.forEach((r) => r.dentLocations.forEach((loc) => allLocations.add(loc)));
@@ -158,7 +165,7 @@ function generateComprehensiveReport(results: DentAnalysisResult[], totalAnglesA
  */
 function extractDentLocations(description: string): string[] {
   const locations: string[] = [];
-  
+
   // Common car body parts that can have dents
   const locationPatterns: { [key: string]: string[] } = {
     'hood': ['hood', 'bonnet'],

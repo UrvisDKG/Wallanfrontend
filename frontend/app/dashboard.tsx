@@ -62,17 +62,7 @@ export default function DashboardScreen() {
 
             </View>
 
-            {/* Main Content */}
             <ScrollView contentContainerStyle={styles.content}>
-
-                {/* Wallan Group Logo */}
-                <View style={styles.brandContainer}>
-                    <Image
-                        source={require('../assets/images/wallan_brand_logo.png')}
-                        style={styles.brandLogo}
-                        resizeMode="contain"
-                    />
-                </View>
 
                 <Text style={styles.sectionTitle}>Dashboard</Text>
 

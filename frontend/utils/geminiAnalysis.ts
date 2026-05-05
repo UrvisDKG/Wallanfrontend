@@ -5,13 +5,18 @@ import { GEMINI_API_KEY } from './config';
 const USE_DEMO_MODE = false;
 
 export interface GeminiAnalysisResult {
+  imageComplete: boolean;
+  completenessNote: string;
   hasDamage: boolean;
-  damageType: string;
+  damageSummary?: {
+    dents: Array<{ location: string; size: string; confidenceScore: number }>;
+    scratches: Array<{ location: string; depth: string; confidenceScore: number }>;
+  };
   severity: 'none' | 'minor' | 'moderate' | 'severe';
   description: string;
   recommendations: string[];
-  imageComplete: boolean;
-  completenessNote?: string;
+  // Maintain backward compatibility for UI
+  damageType?: string;
 }
 
 /**
@@ -56,27 +61,22 @@ export async function analyzeCarDamageWithGemini(imageUri: string, expectedAngle
 
       const hasDamage = Math.random() < 0.5;
 
-      const mockDamageTypes = [
-        'Minor dents on front bumper',
-        'Scratches on door panel',
-        'Crease on fender',
-        'Impact damage on hood',
-        'Side mirror damage',
-      ];
-
-      const mockSeverities: Array<'none' | 'minor' | 'moderate' | 'severe'> = ['none', 'minor', 'moderate', 'severe'];
-
       return {
-        hasDamage: hasDamage,
-        damageType: hasDamage ? mockDamageTypes[Math.floor(Math.random() * mockDamageTypes.length)] : 'None',
-        severity: hasDamage ? mockSeverities[Math.floor(Math.random() * (mockSeverities.length - 1)) + 1] : 'none',
-        description: hasDamage
-          ? `Simulated damage detected: ${Math.random() > 0.5 ? 'Visible dents' : 'Surface damage'} found during inspection`
-          : 'Simulated analysis: No visible damage detected. Vehicle appears to be in good condition.',
-        recommendations: hasDamage
-          ? ['Get professional inspection', 'Check insurance coverage', 'Document damage with photos']
-          : ['Regular maintenance recommended', 'Keep protective coating updated'],
         imageComplete: true,
+        completenessNote: 'Lighting is sufficient for micro-analysis',
+        hasDamage: hasDamage,
+        damageSummary: {
+          dents: hasDamage ? [{ location: 'Front Bumper', size: '2cm', confidenceScore: 0.9 }] : [],
+          scratches: hasDamage ? [{ location: 'Door Panel', depth: 'Surface', confidenceScore: 0.8 }] : []
+        },
+        severity: hasDamage ? 'minor' : 'none',
+        description: hasDamage
+          ? `Simulated forensic analysis: localized deformation detected on the panel.`
+          : 'Simulated analysis: No visible micro-deformations or surface disruptions detected.',
+        recommendations: hasDamage
+          ? ['Paintless Dent Repair suggested', 'Buffing required']
+          : ['Regular maintenance recommended'],
+        damageType: hasDamage ? 'Dent & Scratches' : 'None'
       };
     }
 
@@ -85,37 +85,139 @@ export async function analyzeCarDamageWithGemini(imageUri: string, expectedAngle
 
     const base64 = await imageToBase64(imageUri);
 
+    const isInterior = expectedAngle.toLowerCase().includes('interior') || expectedAngle.toLowerCase().includes('dashboard');
+    const isSpecial = expectedAngle.toLowerCase().includes('engine') || expectedAngle.toLowerCase().includes('trunk');
+
     const payload = {
       contents: [
         {
           parts: [
             {
-              text: `You are an expert vehicle inspector with 20 years of experience.
-TARGET VIEW: ${expectedAngle}
-Your goal is to inspect this image and report back to the customer in a professional, natural, and human tone.
+              text: `SYSTEM ROLE:
+You are a Senior Automotive Forensic Appraiser.
+Your goal is to detect ALL damage, from major smashes to "invisible" parking lot dings, as well as interior wear and maintenance issues.
 
-INSTRUCTIONS:
-0. FIRST, check if this image shows the "${expectedAngle}". If it looks like a completely different angle, FAIL it. Set "imageComplete": false.
-1. Look for dents, scratches, misalignment, and scuffs.
-2. Be critical but fair. "Clean" cars are rare.
-3. **CRITICAL: Write the 'description' as if you are talking to the car owner.** 
-   - BAD: "Damage detected on door panel of severity moderate."
-   - GOOD: "I noticed a nasty dent on the door panel that looks like a parking lot door ding. It's quite visible."
-   - GOOD: "The paint looks pristine here, no issues found."
-   - Avoid robotic JSON-speak in the description field.
+Before performing damage detection, you MUST validate whether the image meets professional automotive inspection standards for the specified view: ${expectedAngle}.
 
- Respond in this exact JSON format (ONLY JSON, no other text):
+--------------------------------------------------------
+STAGE 1: PRACTICAL IMAGE VALIDATION (REAL-WORLD TOLERANT)
+--------------------------------------------------------
+
+Before detecting damage, verify that the image is usable for inspection.
+
+DO NOT reject for small angle imperfections.
+DO NOT reject for normal daylight variation.
+ONLY reject if inspection is genuinely impossible.
+
+=========================
+1. BASIC VISIBILITY CHECK
+=========================
+
+Reject ONLY if:
+
+- Image is clearly blurry (details not sharp)
+${isInterior ? '- Key interior components (seats, dashboard, door cards) are not clearly visible' :
+                  (isSpecial ? '- The target compartment (engine/trunk) is not clearly visible' : '- Main exterior panel is not clearly visible')}
+- Target area is heavily obstructed (person, object, extreme glare)
+- Image is extremely dark or extremely overexposed
+${!isInterior && !isSpecial ? '- No usable reflections visible at all (required for exterior reflection analysis)' : ''}
+
+If any of the above is true:
+- imageComplete = false
+- hasDamage = false
+- severity = "none"
+- description = "Image rejected – reason (e.g., 'Target area not clearly visible')"
+- STOP analysis
+
+=========================
+2. ANGLE & LIGHTING TOLERANCE
+=========================
+
+${isInterior || isSpecial ?
+                  'Accept any angle that shows the component clearly. Normal interior or engine bay lighting/shadows are expected and acceptable if details are visible.' :
+                  `Ideal exterior inspection angle is 15–45° from panel, but DO NOT reject unless:
+- Panel surface is almost completely flat to camera (no reflection distortion visible at all)
+- OR extreme side angle where panel shape cannot be evaluated`}
+
+Normal handheld angles are acceptable.
+
+=========================
+3. COVERAGE (SIMPLIFIED)
+=========================
+
+Accept if:
+${isInterior ? '- Interior cabin elements are reasonably visible' :
+                  (isSpecial ? '- The respective bay (engine or trunk) is visible and inspectable' : '- At least one main exterior panel is clearly visible')}
+- Area occupies reasonable portion of frame
+
+If image passes these practical checks:
+- imageComplete = true
+- Proceed to forensic scan.
+
+--------------------------------------------------------
+STAGE 2: DAMAGE & CONDITION DETECTION PROTOCOL
+--------------------------------------------------------
+
+### SENSITIVITY: EXTREME
+
+${isInterior ? `
+FOCUS AREA: INTERIOR CABIN
+1. UPHOLSTERY: Check for tears, cigarette burns, heavy stains, or sagging headliner.
+2. PLASTICS/TRIM: Check for cracked dashboard, broken air vents, missing knobs, or heavy scuffs.
+3. WEAR: Check for worn steering wheel, scratched screens, or damaged buttons.
+` : (isSpecial ? `
+FOCUS AREA: MECHANICAL / UTILITY
+1. VISUAL DEFECTS: Check for fluid leaks, frayed belts, excessive corrosion, or missing caps/tools.
+2. STRUCTURAL: Check for sub-frame bends, impact signs in the trunk well, or missing insulation.
+` : `
+FOCUS AREA: EXTERIOR PANELS
+1. FLAT PANELS: Use the "Ripple" Test — if a reflection wiggles or bends, IT IS A DENT.
+2. DESIGN LINES: Use the "Kink" Test — if a curve is flat or jagged, IT IS A DENT.
+3. CRITICAL CUES: Look for Refraction (snake effect), Light Pooling (shadow bowls), and Texture Breaks (paint scratches).
+`)}
+
+--------------------------------------------------------
+TASK: HIGH-PRECISION FORENSIC SCAN
+--------------------------------------------------------
+
+Perform a pixel-perfect scan of this ${expectedAngle} view.
+Look for ANY deviation from factory-standard condition.
+
+Accuracy Rule:
+- Do NOT invent damage.
+- Do NOT ignore subtle distortion or minor wear.
+- Be confident but technical and evidence-based.
+
+--------------------------------------------------------
+FINAL OUTPUT — STRICT JSON ONLY
+--------------------------------------------------------
+
+Return ONLY RAW JSON. No markdown. No explanation.
+
 {
+  "imageComplete": boolean,
+  "completenessNote": "Summary of visibility and lighting quality",
   "hasDamage": boolean,
-  "damageType": "Short summary (e.g. 'Deep Scratch')",
+  "damageSummary": {
+    "dents": [
+      {
+        "location": "Specify exact part",
+        "size": "Estimated size or severity",
+        "confidenceScore": 0.0
+      }
+    ],
+    "scratches": [
+      {
+        "location": "Specify exact part",
+        "depth": "Surface|Deep|Through Paint",
+        "confidenceScore": 0.0
+      }
+    ]
+  },
   "severity": "none|minor|moderate|severe",
-  "description": "Your human-like observation of the issue.",
-  "recommendations": ["recommendation 1", "recommendation 2"],
-  "imageComplete": true|false,
-  "completenessNote": "If rejected, explain why naturally"
-}
-
-If image is completely blank or corrupted, set hasDamage to false.`,
+  "description": "Precise technical findings of defects or wear found in this specific view.",
+  "recommendations": ["Actionable steps for repair or cleaning"]
+}`,
             },
             {
               inline_data: {
@@ -128,8 +230,8 @@ If image is completely blank or corrupted, set hasDamage to false.`,
       ],
     };
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-    console.log('Calling Gemini API (gemini-2.0-flash)...');
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
+    console.log('Calling Gemini API (gemini-3-flash-preview)...');
 
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -162,11 +264,23 @@ If image is completely blank or corrupted, set hasDamage to false.`,
         .trim();
     }
 
-    const analysisResult = JSON.parse(cleanedText);
+    const analysisResult = JSON.parse(cleanedText) as GeminiAnalysisResult;
+
+    // Backward compatibility: Populate damageType if missing
+    if (!analysisResult.damageType) {
+      const dentCount = analysisResult.damageSummary?.dents?.length || 0;
+      const scratchCount = analysisResult.damageSummary?.scratches?.length || 0;
+
+      const types = [];
+      if (dentCount > 0) types.push(`${dentCount} Dent(s)`);
+      if (scratchCount > 0) types.push(`${scratchCount} Scratch(es)`);
+
+      analysisResult.damageType = types.length > 0 ? types.join(' & ') : (analysisResult.hasDamage ? 'Damage Detected' : 'No Damage');
+    }
 
     console.log('Analysis Complete:', analysisResult);
 
-    return analysisResult as GeminiAnalysisResult;
+    return analysisResult;
   } catch (error) {
     console.error('Analysis error:', error);
     throw error;

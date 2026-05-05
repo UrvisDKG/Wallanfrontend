@@ -23,11 +23,6 @@ export default function Index() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FDFBFF" />
-      <Image
-        source={require('../assets/images/wallan_brand_logo.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
     </View>
   );
 }

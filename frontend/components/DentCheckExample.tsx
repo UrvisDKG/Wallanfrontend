@@ -15,11 +15,14 @@ import { detectCarDents, analyzeCarFromMultipleAngles } from '../utils/dentDetec
 
 interface DentCheckResult {
   hasDents: boolean;
+  damageType?: string;
   severity: string;
   locations: string[];
   confidence: number;
   description: string;
   recommendations: string[];
+  imageComplete: boolean;
+  completenessNote?: string;
 }
 
 /**
@@ -37,18 +40,21 @@ export function SinglePhotoDentCheck() {
 
     try {
       console.log('🔍 Analyzing photo for dents...');
-      
+
       // Call the dent detection function
       const analysis = await detectCarDents(imageUri);
 
       if (analysis.success) {
         setResult({
           hasDents: analysis.hasDents,
+          damageType: analysis.damageType,
           severity: analysis.severity,
           locations: analysis.dentLocations,
           confidence: analysis.confidence,
           description: analysis.description,
           recommendations: analysis.recommendations,
+          imageComplete: analysis.imageComplete,
+          completenessNote: analysis.completenessNote,
         });
         console.log('✅ Analysis complete:', analysis);
       } else {
@@ -132,6 +138,29 @@ export function SinglePhotoDentCheck() {
               <Text style={styles.detailValue}>{result.confidence}%</Text>
             </View>
 
+            {result.damageType && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Defect Type:</Text>
+                <Text style={styles.detailValue}>{result.damageType}</Text>
+              </View>
+            )}
+
+            {!result.imageComplete && (
+              <View style={[styles.warningBox, { marginTop: 16 }]}>
+                <Text style={styles.warningLabel}>📸 Forensic Quality Warning:</Text>
+                <Text style={styles.warningText}>
+                  {result.completenessNote || 'Image quality may be insufficient for microscopic analysis.'}
+                </Text>
+              </View>
+            )}
+
+            {result.imageComplete && result.completenessNote && (
+              <View style={[styles.infoBox, { marginTop: 16 }]}>
+                <Text style={styles.infoLabel}>🔬 Inspector Note:</Text>
+                <Text style={styles.infoText}>{result.completenessNote}</Text>
+              </View>
+            )}
+
             <View style={styles.descriptionBox}>
               <Text style={styles.descriptionLabel}>📝 Analysis:</Text>
               <Text style={styles.descriptionText}>{result.description}</Text>
@@ -183,7 +212,7 @@ export function MultiAngleDentAssessment() {
 
     try {
       console.log('🔄 Starting comprehensive car assessment...');
-      
+
       // Analyze all angles
       const fullReport = await analyzeCarFromMultipleAngles(imageUris);
 
@@ -481,6 +510,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#bf360c',
     marginVertical: 4,
+  },
+  warningBox: {
+    backgroundColor: '#fff3e0',
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ff9800',
+  },
+  warningLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#e65100',
+    marginBottom: 4,
+  },
+  warningText: {
+    fontSize: 12,
+    color: '#ef6c00',
+    lineHeight: 18,
+  },
+  infoBox: {
+    backgroundColor: '#e3f2fd',
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2196f3',
+  },
+  infoLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1565c0',
+    marginBottom: 4,
+  },
+  infoText: {
+    fontSize: 12,
+    color: '#1976d2',
+    lineHeight: 18,
   },
   button: {
     backgroundColor: '#2196F3',

@@ -4,11 +4,7 @@ import { View, Image, StyleSheet, Dimensions } from 'react-native';
 export const BrandHeader = () => {
     return (
         <View style={styles.container}>
-            <Image
-                source={require('../assets/images/wallan_brand_logo.png')}
-                style={styles.logo}
-                resizeMode="contain"
-            />
+            {/* Logo removed */}
         </View>
     );
 };

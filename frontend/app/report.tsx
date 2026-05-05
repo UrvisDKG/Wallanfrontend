@@ -228,6 +228,29 @@ export default function ReportScreen() {
                                         </View>
                                     </TouchableOpacity>
                                     <Text style={styles.damageType}>{item.damageType}</Text>
+
+                                    {item.damageSummary?.dents && item.damageSummary.dents.length > 0 && (
+                                        <View style={styles.summaryBox}>
+                                            <Text style={styles.summaryLabel}>Dents Detected:</Text>
+                                            {item.damageSummary.dents.map((dent, dIdx) => (
+                                                <Text key={dIdx} style={styles.summaryDetail}>
+                                                    • {dent.location} ({dent.size}) {dent.confidenceScore > 0 ? `| ${Math.round(dent.confidenceScore * 100)}% conf` : ''}
+                                                </Text>
+                                            ))}
+                                        </View>
+                                    )}
+
+                                    {item.damageSummary?.scratches && item.damageSummary.scratches.length > 0 && (
+                                        <View style={styles.summaryBox}>
+                                            <Text style={styles.summaryLabel}>Scratches Detected:</Text>
+                                            {item.damageSummary.scratches.map((scratch, sIdx) => (
+                                                <Text key={sIdx} style={styles.summaryDetail}>
+                                                    • {scratch.location} ({scratch.depth}) {scratch.confidenceScore > 0 ? `| ${Math.round(scratch.confidenceScore * 100)}% conf` : ''}
+                                                </Text>
+                                            ))}
+                                        </View>
+                                    )}
+
                                     <Text style={styles.description}>{item.description}</Text>
                                 </View>
                             ))}
@@ -640,5 +663,27 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 30,
         fontWeight: 'bold',
+    },
+    summaryBox: {
+        marginTop: 8,
+        marginBottom: 8,
+        backgroundColor: '#F9FAFB',
+        padding: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#F3F4F6',
+    },
+    summaryLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#4B5563',
+        marginBottom: 4,
+        textTransform: 'uppercase',
+    },
+    summaryDetail: {
+        fontSize: 13,
+        color: '#1F2937',
+        marginLeft: 4,
+        marginBottom: 2,
     },
 });
